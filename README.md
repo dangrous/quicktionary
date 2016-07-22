@@ -4,6 +4,6 @@ Stack (in theory):
 Bootstrap
 React.js
 Flask
-SQLAlchemy (or maybe peewee)
+peewee
 
 All code is open source. Or will be once it exists.

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>The Game of Things</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.6.16/browser.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+  </head>
+  <body>
+    <h1>The Game of Things</h1>
+    <div id="content"></div>
+    <script type="text/babel">
+ 
+      let loadRoomInterval;
+      let gameStartedInterval;
+
+      let Game = React.createClass({
+        getInitialState: function() {
+          return {code: '', name: '', data:'', room: false, self: '', game_data: '', is_owner: false, is_leader: false, in_progress: false};
+        },
+        handleCodeChange: function(e) {
+          this.setState({code: e.target.value});
+        },
+        handleNameChange: function(e) {
+          this.setState({name: e.target.value});
+        },
+        loadRoomPlayers: function() {
+          if (this.state.room) {
+            $.ajax({
+              url: "/api/games",
+              dataType: 'json',
+              type: 'POST',
+              data: {action: "update", code: this.state.data.room},
+              success: function(data) {
+                this.setState({data: data});
+              }.bind(this)
+            });
+          } else {
+            console.log("no room selected");
+          }
+        },
+        componentDidMount: function() {
+          this.loadRoomPlayers();
+          loadRoomInterval = setInterval(this.loadRoomPlayers, 2000);
+          this.hasGameStarted();
+          gameStartedInterval = setInterval(this.hasGameStarted, 2000);
+        },
+        handleRoomStart: function(data) {
+          this.setState({data: data, room: true, is_owner: data.owner, self: data.self});
+        },
+        handleGameStart: function() {
+          $.ajax({
+            url: "/startgame",
+            dataType: 'json',
+            type: 'POST',
+            data: {code: this.state.data.room}
+          });
+        },
+        hasGameStarted: function() {
+          if (this.state.room) {
+            $.ajax({
+              url: "/started",
+              dataType: 'json',
+              type: 'POST',
+              data: {code: this.state.data.room},
+              success: function(data) {
+                this.setState({in_progress: data.started});
+                this.setState({game_data: data.info})
+                if (this.state.in_progress) {
+                  clearInterval(loadRoomInterval);
+                  clearInterval(gameStartedInterval);
+                }
+              }.bind(this)
+            })
+          }
+        },
+        render: function() {
+          if (this.state.room) {
+            let roomCode = this.state.data.room;
+            let playerNodes;
+            let numPlayers = 0;
+            if (this.state.in_progress) {
+              return (
+                <div>
+                  <Leader code={roomCode} self={this.state.self}/>
+                  <Prompt />
+                  <SubmissionForm />
+                  <SubmissionList />
+                </div>
+              );
+            }
+            if (this.state.data != '') {
+              playerNodes = this.state.data.users.map(function(player) {
+                numPlayers++;
+                return (
+                  <Player name={player.name} key={player.id} />
+                );
+              });
+            }
+            let startButton;
+            if (this.state.is_owner) {
+              startButton = <p>Are all players ready? Then <button onClick={this.handleGameStart}>Start Game</button></p>;
+            } else {
+              startButton = '';
+            }
+
+            return (
+              <div>
+                <p id="roomCode">The room code is {roomCode}</p>
+                <p id="numPlayers">There are {numPlayers} players.</p>
+                <ul id="players">{playerNodes}</ul>
+                {startButton}
+              </div>
+            );
+          } else {
+            return (<JoinForm onRoomStart={this.handleRoomStart} />);
+          }
+        }
+      });
+
+      let Leader = React.createClass({
+      	getInitialState: function() {
+      		return {leader: '', self: this.props.self};
+      	},
+      	componentDidMount: function() {
+      		$.ajax({
+              url: "/leader",
+              dataType: 'json',
+              type: 'POST',
+              data: {code: this.props.code},
+              success: function(data) {
+                if (data.leader.id == this.state.self.id) {
+                  this.setState({leader: "YOU!"});
+                } else {
+                	this.setState({leader: data.leader.name});
+                }
+              }.bind(this)
+            })
+      	},
+      	render: function() {
+      		return (
+      			<p>The leader of this round is {this.state.leader}</p>
+      		);
+      	}
+      });
+
+      let JoinForm = React.createClass({
+        getInitialState: function() {
+          return {code: '', name: ''};
+        },
+        handleCodeChange: function(e) {
+          this.setState({code: e.target.value});
+        },
+        handleNameChange: function(e) {
+          this.setState({name: e.target.value});
+        },
+        startRoom: function(e) {
+          $.ajax({
+            url: "/api/games",
+            dataType: 'json',
+            type: 'POST',
+            data: {name: this.state.name, action: "start"},
+            success: function(data) {
+              this.props.onRoomStart(data);
+            }.bind(this)
+          });
+        },
+        joinRoom: function(e) {
+          $.ajax({
+            url: "/api/games",
+            dataType: 'json',
+            type: 'POST',
+            data: {name: this.state.name, action: "join", code: this.state.code},
+            success: function(data) {
+              this.props.onRoomStart(data);
+            }.bind(this)
+          });
+        },
+        render: function() {
+          return (
+            <div>
+              <form className="joinRoom">
+                <input
+                  type="text"
+                  placeholder="Enter Your Name"
+                  value={this.state.name}
+                  onChange={this.handleNameChange}
+                  name="name"
+                />
+                <button type="button" onClick={this.startRoom}>Start Game</button> or <input
+                  type="text"
+                  placeholder="Room Code"
+                  value={this.state.code}
+                  onChange={this.handleCodeChange}
+                  name="name"
+                /><button type="button" onClick={this.joinRoom}>Join Game</button>
+              </form>
+            </div>)
+        }
+      });
+
+      let Prompt = React.createClass({
+        render: function() {
+          return (<p>This is where the leader will see a prompt entry form, and everyone else will see a waiting message until they enter. Then, all will see the prompt (the leader will see an edit button, too)</p>);
+        }
+      });
+
+      let SubmissionForm = React.createClass({
+        render: function() {
+          return (<p>This is where everyone will see a form to enter their submission to the prompt.</p>);
+        }
+      });
+
+      let SubmissionList = React.createClass({
+        render: function() {
+          return (<p>This is where everyone will see the list of people who have submitted, until EVERYONE has submitted. Then they will see randomized submissions, non-attributed. The leader will see attributions. The leader will be able to reveal submissions (to everyone else) one by one, or all at once.</p>);
+        }
+      });
+      
+      let Player = React.createClass({
+        render: function() {
+          return (
+            <li className="player">
+              <strong>
+                {this.props.name}
+              </strong> has joined.
+            </li>
+          );
+        }
+      });
+
+      ReactDOM.render(
+        <Game />,
+        document.getElementById('content')
+      );
+    </script>
+  </body>
+</html>
