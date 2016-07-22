@@ -3,7 +3,6 @@
   <head>
     <meta charset="utf-8">
     <title>The Game of Things</title>
-    <!-- Not present in the tutorial. Just for basic styling. -->
     <link rel="stylesheet" href="css/base.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom.js"></script>
@@ -14,309 +13,248 @@
     <h1>The Game of Things</h1>
     <div id="content"></div>
     <script type="text/babel">
-      let Submission = React.createClass({
+ 
+      let gameDataInterval;
+
+      let Game = React.createClass({
         getInitialState: function() {
-          return {
-            showAuthor: this.props.revealed,
-            active: this.props.active
-          };
-        },
-        
-        componentWillReceiveProps: function(nextProps) {
-          if(this.props.revealed !== nextProps.revealed) {
-            this.setState({
-              showAuthor: nextProps.revealed
-            });
-          }
-          
-          if(this.props.active !== nextProps.active) {
-            this.setState({
-              active: nextProps.active
-            });
-          }
-        },
-        
-        reveal: function() {
-          this.setState({
-            showAuthor: !this.state.showAuthor
-          });
-        },
-        
-        render: function() {
-          let authorText;
-          if (!this.state.active) {
-            return (
-              <li className="submission">
-                {this.props.author} has submitted.
-              </li>
-            );
-          } else {
-            if (this.state.showAuthor) {
-              authorText = " - " + this.props.author;
-            } else {
-              authorText = "";
-            }
-            
-            return (
-              <li className="submission" onClick={this.reveal}>
-                <span className="submissionText">
-                  {this.props.text}
-                </span>
-                <span className="submissionAuthor">
-                  {authorText}
-                </span>
-              </li>
-            );
-          }
-        }
-      });
-        
-      let GameBox = React.createClass({
-        loadSubmissionsFromServer: function() {
-          $.ajax({
-            url: this.props.url,
-            dataType: 'json',
-            cache: false,
-            success: function(data) {
-              this.setState({data: data});
-            }.bind(this),
-            error: function(xhr, status, err) {
-              console.error(this.props.url, status, err.toString());
-            }.bind(this)
-          });
-        },
-        handleGameStart: function(e) {
-          e.preventDefault();
-          this.setState({gameInProgress: true});
-        },
-        handleSubmission: function(submission) {
-          $.ajax({
-            url: this.props.url,
-            dataType: 'json',
-            type: 'POST',
-            data: submission,
-            success: function(data) {
-              this.setState({data: data});
-            }.bind(this),
-            error: function(xhr, status, err) {
-              console.error(this.props.url, status, err.toString());
-            }.bind(this)
-          });
-        },
-        getInitialState: function() {
-          return {data: [], gameInProgress: false, roomCode: 'LAKWE'};
-        },
-        componentDidMount: function() {
-          this.loadSubmissionsFromServer();
-          setInterval(this.loadSubmissionsFromServer, this.props.pollInterval);
-        },
-        render: function() {
-          if (this.state.gameInProgress) {
-            return (
-              <div className="gameBox">
-                <p>Your Room Code is {this.state.roomCode}</p>
-                <Prompt />
-                <SubmissionForm onSubmissionSubmit={this.handleSubmission}/>
-                <h3>Submissions</h3>
-                <SubmissionList data={this.state.data}/>
-              </div>
-            );
-          } else {
-            return (
-              <div className="gameBox">
-                <JoinGame handleStart={this.handleGameStart}/>
-              </div>
-            )
-          }
-        }
-      });
-      
-      let Prompt = React.createClass({
-        getInitialState: function() {
-          return {
-            prompt: '',
-            ready: false
-          }
-        },
-        handlePromptChange: function(e) {
-          this.setState({prompt: e.target.value});
-        },
-        handleSubmit: function(e) {
-          e.preventDefault();
-          let prompt = this.state.prompt.trim();
-          if (!prompt) {
-            return;
-          }
-          this.setState({ready: true});
-        },
-        handlePromptEdit: function() {
-          this.setState({ready: false});
-        },
-        render: function() {
-          if (this.state.ready) {
-            return (
-              <div>
-                <h3 className="prompt">
-                  Prompt: {this.state.prompt}
-                </h3>
-                <button onClick={this.handlePromptEdit}>Edit Prompt</button>
-              </div>
-            );
-          } else {
-            return (
-              <form className="promptForm" onSubmit={this.handleSubmit}>
-                <input
-                  type="text"
-                  placeholder="Enter the Prompt..."
-                  value={this.state.prompt}
-                  onChange={this.handlePromptChange}
-                />
-                <input type="submit" value="Submit" />
-              </form>
-            );
-          }
-          return (
-            <div className="prompt">
-              This is where you will enter (or display) the current prompt.
-            </div>
-          );
-        }
-      })
-      
-      let SubmissionList = React.createClass({
-        getInitialState: function() {
-          return {
-            readyToVote: false,
-            revealAll: false
-          };
-        },
-        
-        revealAllSubmissions: function() {
-          this.setState({
-            revealAll: !this.state.revealAll
-          });
-        },
-        
-        startVoting: function() {
-          this.setState({
-            active: true
-          });
-        },
-        
-        render: function() {
-          let revealed = this.state.revealAll;
-          let active = this.state.active;
-          let submissionNodes = this.props.data.map(function(submission) {
-            return (
-              <Submission author={submission.author} key={submission.id} text={submission.text} revealed={revealed} active={active}/>
-            );
-          });
-          
-          return (
-            <div className="allSubmissions">
-              <ul className="submissionList">
-                {submissionNodes}
-              </ul>
-              <button onClick={this.revealAllSubmissions}>Reveal All</button>
-              <button onClick={this.startVoting}>Ready to Vote</button>
-            </div>
-          );
-        }
-      });
-      
-      let JoinGame = React.createClass({
-        getInitialState: function() {
-          return {code: '', username: ''};
+          return {gamedata:'', players:'', self: '', joined: false};
         },
         handleCodeChange: function(e) {
           this.setState({code: e.target.value});
         },
         handleNameChange: function(e) {
-          this.setState({username: e.target.value});
+          this.setState({name: e.target.value});
         },
-        addUser: function(e) {
-          e.preventDefault();
+        updateGameData: function() {
+          if (this.state.joined) {
+            $.ajax({
+              url: "/data",
+              dataType: 'json',
+              type: 'POST',
+              data: {code: this.state.gamedata.code},
+              success: function(data) {
+                this.setState({gamedata: data.gamedata, players: data.players});
+              }.bind(this)
+            });
+          } else {
+            console.log("no room selected");
+          }
+        },
+        componentDidMount: function() {
+          this.updateGameData();
+          gameDataInterval = setInterval(this.updateGameData, 2000);
+        },
+        handleRoomStart: function(data) {
+          this.setState({players: data.players, gamedata: data.gamedata, self: data.self, joined: true});
+        },
+        handleGameStart: function() {
           $.ajax({
-            url: "/api/users",
+            url: "/start",
             dataType: 'json',
             type: 'POST',
-            data: {name: this.state.name},
+            data: {code: this.state.gamedata.code},
+          });
+        },
+        render: function() {
+          if (this.state.joined) {
+            let roomCode = this.state.gamedata.code;
+            let playerNodes;
+            let numPlayers = 0;
+            let isLeader = false;
+            if (this.state.gamedata.leader.id == this.state.self.id) {
+              isLeader = true;
+            }
+            if (this.state.gamedata.num_round > 0) {
+              return (
+                <div>
+                  <Leader isLeader={isLeader} leader={this.state.gamedata.leader} />
+                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} code={this.state.gamedata.code}/>
+                  <SubmissionForm />
+                  <SubmissionList />
+                </div>
+              );
+            }
+
+            if (this.state.players != '') {
+              playerNodes = this.state.players.map(function(player) {
+                numPlayers++;
+                return (
+                  <Player name={player.name} key={player.id} />
+                );
+              });
+            }
+
+            let startButton;
+            if (this.state.gamedata.owner.id == this.state.self.id) {
+              startButton = <p>Are all players ready? Then <button onClick={this.handleGameStart}>Start Game</button></p>;
+            } else {
+              startButton = '';
+            }
+
+            return (
+              <div>
+                <p id="roomCode">The room code is {roomCode}</p>
+                <p id="numPlayers">There are {numPlayers} players.</p>
+                <ul id="players">{playerNodes}</ul>
+                {startButton}
+              </div>
+            );
+          } else {
+            return (<JoinForm onRoomStart={this.handleRoomStart} />);
+          }
+        }
+      });
+
+      let Leader = React.createClass({
+      	render: function() {
+      		let leader;
+          if (this.props.isLeader) {
+            leader = "YOU!";
+          } else {
+            leader = this.props.leader.name;
+          }
+          return (
+      			<p>The leader of this round is <strong>{leader}</strong></p>
+      		);
+      	}
+      });
+
+      let JoinForm = React.createClass({
+        getInitialState: function() {
+          return {code: '', name: ''};
+        },
+        handleCodeChange: function(e) {
+          this.setState({code: e.target.value});
+        },
+        handleNameChange: function(e) {
+          this.setState({name: e.target.value});
+        },
+        startRoom: function() {
+          $.ajax({
+            url: "/connect",
+            dataType: 'json',
+            type: 'POST',
+            data: {name: this.state.name, action: "start"},
             success: function(data) {
-              this.props.handleStart;
+              this.props.onRoomStart(data);
+            }.bind(this)
+          });
+        },
+        joinRoom: function() {
+          $.ajax({
+            url: "/connect",
+            dataType: 'json',
+            type: 'POST',
+            data: {name: this.state.name, action: "join", code: this.state.code},
+            success: function(data) {
+              this.props.onRoomStart(data);
             }.bind(this)
           });
         },
         render: function() {
           return (
             <div>
-              <form className="joinGame" onSubmit={this.addUser}>
+              <form className="joinRoom">
                 <input
                   type="text"
                   placeholder="Enter Your Name"
-                  value={this.state.username}
+                  value={this.state.name}
                   onChange={this.handleNameChange}
                   name="name"
                 />
-                <br />
-                <br />
-                <input
+                <button type="button" onClick={this.startRoom}>Start Game</button> or <input
                   type="text"
-                  placeholder="Enter Room Code"
+                  placeholder="Room Code"
                   value={this.state.code}
                   onChange={this.handleCodeChange}
-                />
-                <input type="submit" value="Join Room" />
-                <span> Or </span>
-                <button onClick={this.addUser}>Set Up New Room</button>
+                  name="name"
+                /><button type="button" onClick={this.joinRoom}>Join Game</button>
               </form>
-            </div>
-          );
+            </div>)
         }
       });
-      
-      let SubmissionForm = React.createClass({
+
+      let Prompt = React.createClass({
         getInitialState: function() {
-          return {author: '', text: ''};
+          return {prompt: ''};
         },
-        handleAuthorChange: function(e) {
-          this.setState({author: e.target.value});
+        handlePromptChange: function(e) {
+          this.setState({prompt: e.target.value});
         },
-        handleTextChange: function(e) {
-          this.setState({text: e.target.value});
+        enterPrompt: function() {
+          $.ajax({
+            url: "/prompt",
+            dataType: 'json',
+            type: 'POST',
+            data: {action: "set", prompt: this.state.prompt, code: this.props.code},
+          });
         },
-        handleSubmit: function(e) {
-          e.preventDefault();
-          let author = this.state.author.trim();
-          let text = this.state.text.trim();
-          if (!text || !author) {
-            return;
-          }
-          this.props.onSubmissionSubmit({author: author, text: text});
-          this.setState({author: '', text: ''});
+        editPrompt: function() {
+          $.ajax({
+            url: "/prompt",
+            dataType: 'json',
+            type: 'POST',
+            data: {action: "clear", code: this.props.code},
+          });
         },
         render: function() {
-          return (
-            <form className="submissionForm" onSubmit={this.handleSubmit}>
-              <input
-                type="text"
-                placeholder="Say something..."
-                value={this.state.text}
-                onChange={this.handleTextChange}
-              />
-              <input
-                type="text"
-                placeholder="Your name"
-                value={this.state.author}
-                onChange={this.handleAuthorChange}
-              />
-              <input type="submit" value="Post" />
-            </form>
-          );
+          if (this.props.prompt) {
+            let editButton;
+            if (this.props.isLeader) {
+              editButton = <button type="button" onClick={this.editPrompt}>Edit Prompt</button>
+            }
+
+            return(<p>The prompt is <strong>"{this.props.prompt}"</strong>{editButton}</p>);
+          } else {
+            if (this.props.isLeader) {
+              return (
+                <div>
+                  <form className="enterPrompt">
+                    <input
+                      type="text"
+                      placeholder="Enter the Round Prompt"
+                      value={this.state.prompt}
+                      onChange={this.handlePromptChange}
+                      name="prompt"
+                    />
+                    <button type="button" onClick={this.enterPrompt}>Enter Prompt</button>
+                  </form>
+                </div>
+              );
+            } else {
+              return(<p>The prompt has not yet been entered.</p>);
+            }
+          }
+        }
+      });
+
+      let SubmissionForm = React.createClass({
+        render: function() {
+          return (<p>This is where everyone will see a form to enter their submission to the prompt.</p>);
+        }
+      });
+
+      let SubmissionList = React.createClass({
+        render: function() {
+          return (<p>This is where everyone will see the list of people who have submitted, until EVERYONE has submitted. Then they will see randomized submissions, non-attributed. The leader will see attributions. The leader will be able to reveal submissions (to everyone else) one by one, or all at once.</p>);
         }
       });
       
+      let Player = React.createClass({
+        render: function() {
+          return (
+            <li className="player">
+              <strong>
+                {this.props.name}
+              </strong> has joined.
+            </li>
+          );
+        }
+      });
+
       ReactDOM.render(
-        <GameBox url="/api/submissions" pollInterval={2000} />,
+        <Game />,
         document.getElementById('content')
       );
     </script>
