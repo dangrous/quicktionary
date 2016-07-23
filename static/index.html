@@ -18,7 +18,7 @@
 
       let Game = React.createClass({
         getInitialState: function() {
-          return {gamedata:'', players:'', self: '', joined: false};
+          return {gamedata:'', players:'', self: '', submissions: '', joined: false};
         },
         updateGameData: function() {
           if (this.state.joined) {
@@ -28,7 +28,7 @@
               type: 'POST',
               data: {room: this.state.gamedata.id},
               success: function(data) {
-                this.setState({gamedata: data.gamedata, players: data.players});
+                this.setState({gamedata: data.gamedata, players: data.players, submissions: data.submissions});
               }.bind(this)
             });
           } else {
@@ -60,12 +60,21 @@
               isLeader = true;
             }
             if (this.state.gamedata.num_round > 0) {
+              let submissionForm = <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />;
+              let selfId = this.state.self.id;
+              if (this.state.submissions != '') {
+              	this.state.submissions.map(function(submission) {
+              		if (submission.author.id == selfId) {
+              			submissionForm = '';
+              		}
+              	});
+              }
               return (
                 <div>
                   <Leader isLeader={isLeader} leader={this.state.gamedata.leader} />
                   <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
-                  <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />
-                  <SubmissionList />
+                  {submissionForm}
+                  <SubmissionList submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
                 </div>
               );
             }
@@ -258,8 +267,31 @@
 
       let SubmissionList = React.createClass({
         render: function() {
-          return (<p>This is where everyone will see the list of people who have submitted, until EVERYONE has submitted. Then they will see randomized submissions, non-attributed. The leader will see attributions. The leader will be able to reveal submissions (to everyone else) one by one, or all at once.</p>);
+          let submissionNodes;
+          if (this.props.submissions != '') {
+      		submissionNodes = this.props.submissions.map(function(submission) {
+	            return (
+	              <Submission name={submission.author} submission={submission.text} key={submission.id} />
+	            );
+	        }
+	      } else {
+	      	submissionNodes = <li>No one has submitted yet.</li>;
+	      }
+
+          return (<ul>{submissionNodes}</ul>);
         }
+      });
+
+      let Submission = React.createClass({
+      	render: function() {
+      		return (
+      			<li className="submission">
+      				<strong>
+      					{this.props.name.name}
+      				</strong> has submitted.
+      			</li>
+      		);
+      	}
       });
       
       let Player = React.createClass({

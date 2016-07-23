@@ -23,7 +23,12 @@ def home():
 def get_game_data():
     room = Room.get(Room.id == request.form['room'])
     users = User.select().where(User.room_id == room.id)
-    return jsonify(gamedata=model_to_dict(room), players=[model_to_dict(user) for user in users])
+    submissions = Submission.select().where(Submission.room == room).order_by(fn.Random())
+    if submissions.exists():
+    	submissions = [model_to_dict(submission) for submission in submissions]
+    else:
+    	submissions = ''
+    return jsonify(gamedata=model_to_dict(room), submissions=submissions, players=[model_to_dict(user) for user in users])
 
 @app.route('/connect', methods=['POST'])
 def join_game():
