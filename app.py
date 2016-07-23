@@ -21,7 +21,7 @@ def home():
 
 @app.route('/data', methods=['POST'])
 def get_game_data():
-    room = Room.get(Room.code == request.form['code'])
+    room = Room.get(Room.id == request.form['room'])
     users = User.select().where(User.room_id == room.id)
     return jsonify(gamedata=model_to_dict(room), players=[model_to_dict(user) for user in users])
 
@@ -53,7 +53,7 @@ def join_game():
 
 @app.route('/start', methods=['POST'])
 def start_game():
-    room = Room.get(Room.code == request.form['code'])
+    room = Room.get(Room.id == request.form['room'])
     first_player = User.get(User.room_id == room.id, User.order_in_room == random.randint(1, room.num_players))
     room.leader = first_player
     print room.leader.name
@@ -63,7 +63,7 @@ def start_game():
 
 @app.route('/prompt', methods=['POST'])
 def handle_prompts():
-    room = Room.get(Room.code == request.form['code'])
+    room = Room.get(Room.id == request.form['room'])
     if request.form['action'] == 'clear':
         room.prompt = None
         room.save()
@@ -74,7 +74,7 @@ def handle_prompts():
 
 @app.route('/submit', methods=['POST'])
 def handle_submissions():
-	room = Room.get(Room.code == request.form['code'])
+	room = Room.get(Room.id == request.form['room'])
 	user = User.get(User.id == request.form['self'])
 	submission = Submission.create(
 		text = request.form['submission'],

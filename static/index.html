@@ -20,19 +20,13 @@
         getInitialState: function() {
           return {gamedata:'', players:'', self: '', joined: false};
         },
-        handleCodeChange: function(e) {
-          this.setState({code: e.target.value});
-        },
-        handleNameChange: function(e) {
-          this.setState({name: e.target.value});
-        },
         updateGameData: function() {
           if (this.state.joined) {
             $.ajax({
               url: "/data",
               dataType: 'json',
               type: 'POST',
-              data: {code: this.state.gamedata.code},
+              data: {room: this.state.gamedata.id},
               success: function(data) {
                 this.setState({gamedata: data.gamedata, players: data.players});
               }.bind(this)
@@ -53,7 +47,7 @@
             url: "/start",
             dataType: 'json',
             type: 'POST',
-            data: {code: this.state.gamedata.code},
+            data: {room: this.state.gamedata.id},
           });
         },
         render: function() {
@@ -69,8 +63,8 @@
               return (
                 <div>
                   <Leader isLeader={isLeader} leader={this.state.gamedata.leader} />
-                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} code={this.state.gamedata.code} />
-                  <SubmissionForm code={this.state.gamedata.code} self={this.state.self} />
+                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
+                  <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />
                   <SubmissionList />
                 </div>
               );
@@ -187,7 +181,7 @@
             url: "/prompt",
             dataType: 'json',
             type: 'POST',
-            data: {action: "set", prompt: this.state.prompt, code: this.props.code},
+            data: {action: "set", prompt: this.state.prompt, room: this.props.room},
           });
         },
         editPrompt: function() {
@@ -195,7 +189,7 @@
             url: "/prompt",
             dataType: 'json',
             type: 'POST',
-            data: {action: "clear", code: this.props.code}
+            data: {action: "clear", room: this.props.room}
           });
         },
         render: function() {
@@ -241,7 +235,7 @@
         		url: "/submit",
         		dataType: 'json',
         		type: 'POST',
-        		data: {submission: this.state.submission, self: this.props.self.id, code: this.props.code}
+        		data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
         	});
         },
         render: function() {
