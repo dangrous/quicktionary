@@ -69,8 +69,8 @@
               return (
                 <div>
                   <Leader isLeader={isLeader} leader={this.state.gamedata.leader} />
-                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} code={this.state.gamedata.code}/>
-                  <SubmissionForm />
+                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} code={this.state.gamedata.code} />
+                  <SubmissionForm code={this.state.gamedata.code} self={this.state.self} />
                   <SubmissionList />
                 </div>
               );
@@ -195,7 +195,7 @@
             url: "/prompt",
             dataType: 'json',
             type: 'POST',
-            data: {action: "clear", code: this.props.code},
+            data: {action: "clear", code: this.props.code}
           });
         },
         render: function() {
@@ -230,8 +230,35 @@
       });
 
       let SubmissionForm = React.createClass({
+        getInitialState: function() {
+        	return {submission: ''};
+        },
+        handleSubmissionChange: function(e) {
+        	this.setState({submission: e.target.value});
+        },
+        addSubmission: function() {
+        	$.ajax({
+        		url: "/submit",
+        		dataType: 'json',
+        		type: 'POST',
+        		data: {submission: this.state.submission, self: this.props.self.id, code: this.props.code}
+        	});
+        },
         render: function() {
-          return (<p>This is where everyone will see a form to enter their submission to the prompt.</p>);
+          return (
+          	<div>
+          		<form className="addSubmission">
+          			<input
+          				type="text"
+          				placeholder="Enter Your Answer to the Prompt"
+          				value={this.state.submission}
+          				onChange={this.handleSubmissionChange}
+          				name="submission"
+          			/>
+          			<button type="button" onClick={this.addSubmission}>Enter Submission</button>
+          		</form>
+          	</div>
+          );
         }
       });
 

@@ -72,6 +72,17 @@ def handle_prompts():
         room.save()
     return "Prompt updated"
 
+@app.route('/submit', methods=['POST'])
+def handle_submissions():
+	room = Room.get(Room.code == request.form['code'])
+	user = User.get(User.id == request.form['self'])
+	submission = Submission.create(
+		text = request.form['submission'],
+	    author = user,
+	    room = room
+	)
+	return "Submission added"
+
 def get_room_code():
     return ''.join(random.choice(string.ascii_uppercase) for n in range(5))
 
