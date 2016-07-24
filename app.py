@@ -23,8 +23,12 @@ def home():
 def get_game_data():
     room = Room.get(Room.id == request.form['room'])
     users = User.select().where(User.room_id == room.id)
-    submissions = Submission.select().where(Submission.room == room).order_by(fn.Random())
-    if submissions.exists():
+    submission_count = Submission.select().where(Submission.room == room).count()
+    if submission_count > 0:
+    	if submission_count == room.num_players:
+    		submissions = Submission.select().where(Submission.room == room).order_by(Submission.randomizer)
+    	else:
+    		submissions = Submission.select().where(Submission.room == room)
     	submissions = [model_to_dict(submission) for submission in submissions]
     else:
     	submissions = ''
@@ -84,9 +88,29 @@ def handle_submissions():
 	submission = Submission.create(
 		text = request.form['submission'],
 	    author = user,
-	    room = room
+	    room = room,
+	    randomizer = random.random()
 	)
 	return "Submission added"
+
+@app.route('/reveal', methods=['POST'])
+def reveal_submission():
+	submission = Submission.get(Submission.id == request.form['submission'])
+	submission.show_auth = True
+	submission.save()
+	return "Submission revealed."
+
+@app.route('/advance', methods=['POST'])
+def advance_round():
+	delete_subs = Submission.delete().where(Submission.room_id == request.form['room'])
+	delete_subs.execute()
+	room = Room.get(Room.id == request.form['room'])
+	room.num_round = room.num_round + 1
+	next_player = User.get(User.room_id == room.id, User.order_in_room == room.leader.order_in_room % room.num_players + 1)
+	room.leader = next_player
+	room.prompt = None
+	room.save()
+	return "Begun next round."
 
 def get_room_code():
     return ''.join(random.choice(string.ascii_uppercase) for n in range(5))

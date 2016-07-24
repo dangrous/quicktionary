@@ -50,8 +50,17 @@
             data: {room: this.state.gamedata.id},
           });
         },
+        advanceRound: function() {
+        	$.ajax({
+            url: "/advance",
+            dataType: 'json',
+            type: 'POST',
+            data: {room: this.state.gamedata.id},
+          });
+        },
         render: function() {
           if (this.state.joined) {
+            let advanceButton = <button type="button" onClick={this.advanceRound}>Advance Round</button>
             let roomCode = this.state.gamedata.code;
             let playerNodes;
             let numPlayers = 0;
@@ -62,6 +71,9 @@
             if (this.state.gamedata.num_round > 0) {
               let submissionForm = <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />;
               let selfId = this.state.self.id;
+              if (!this.state.gamedata.prompt) {
+              	submissionForm = '';
+              }
               if (this.state.submissions != '') {
               	this.state.submissions.map(function(submission) {
               		if (submission.author.id == selfId) {
@@ -69,12 +81,17 @@
               		}
               	});
               }
+              let submissionList;
+              if (this.state.gamedata.prompt) {
+              	submissionList = <SubmissionList submissions={this.state.submissions} num_players={this.state.gamedata.num_players} isLeader={isLeader} />
+              }
               return (
                 <div>
-                  <Leader isLeader={isLeader} leader={this.state.gamedata.leader} />
+                  <Leader isLeader={isLeader} leader={this.state.gamedata.leader} round={this.state.gamedata.num_round}/>
                   <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
                   {submissionForm}
-                  <SubmissionList submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
+                  {submissionList}
+                  {advanceButton}
                 </div>
               );
             }
@@ -118,7 +135,7 @@
             leader = this.props.leader.name;
           }
           return (
-      			<p>The leader of this round is <strong>{leader}</strong></p>
+      			<p>Round {this.props.round}: The leader of this round is <strong>{leader}</strong></p>
       		);
       	}
       });
@@ -268,12 +285,26 @@
       let SubmissionList = React.createClass({
         render: function() {
           let submissionNodes;
+          let isLeader = this.props.isLeader;
           if (this.props.submissions != '') {
-      		submissionNodes = this.props.submissions.map(function(submission) {
-	            return (
-	              <Submission name={submission.author} submission={submission.text} key={submission.id} />
-	            );
+	        if (this.props.submissions.length == this.props.num_players) {
+	        	submissionNodes = this.props.submissions.map(function(submission) {
+		            return (
+		              <Submission author={submission.author} key={submission.id} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
+		            );
+	          	});
+	        } else {
+	            if (this.props.submissions.length == 1) {
+	            	return (
+	            		<li>1 person has submitted.</li>
+	            	)
+	            } else {
+		            return (
+		              <li>{this.props.submissions.length} people have submitted.</li>
+		            );
+		        }
 	        }
+	         
 	      } else {
 	      	submissionNodes = <li>No one has submitted yet.</li>;
 	      }
@@ -283,12 +314,26 @@
       });
 
       let Submission = React.createClass({
+      	revealSubmission: function() {
+      		$.ajax({
+        		url: "/reveal",
+        		dataType: 'json',
+        		type: 'POST',
+        		data: {submission: this.props.submission}
+        	});
+      	},
       	render: function() {
+      		let author;
+      		let revealButton;
+      		if (this.props.showAuth) {
+      			author = <span> - {this.props.author.name}</span>;
+      		}
+      		if (this.props.isLeader) {
+      			revealButton = <button type="button" onClick={this.revealSubmission}>Reveal Author</button>;
+      		}
       		return (
       			<li className="submission">
-      				<strong>
-      					{this.props.name.name}
-      				</strong> has submitted.
+      				{this.props.text}{author}{revealButton}
       			</li>
       		);
       	}
