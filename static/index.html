@@ -40,7 +40,7 @@
         },
         componentDidMount: function() {
           this.updateGameData();
-          gameDataInterval = setInterval(this.updateGameData, 2000);
+          setInterval(this.updateGameData, 2000);
         },
         handleRoomStart: function(data) {
           this.setState({players: data.players, gamedata: data.gamedata, self: data.self, joined: true});
@@ -68,12 +68,12 @@
             let playerNodes;
             let numPlayers = 0;
             let isLeader = false;
-            let userScores;
+            let playerScores;
             if (this.state.gamedata.votes == 0 || this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
               let showScore = true;
-              userScores = this.state.players.map(function(player) {
+              playerScores = this.state.players.map(function(player) {
                 return (
-                  <Player name={player.name} key={player.id} score={player.score} showScore={showScore} />
+                  <li key={player.id}><strong>{player.name}</strong> has {player.score} points.</li>
                 );
               });
             }
@@ -103,12 +103,12 @@
               }
               return (
                 <div>
-                  <Leader isLeader={isLeader} leader={this.state.gamedata.leader} round={this.state.gamedata.num_round}/>
+                  <p>Round {this.state.gamedata.num_round}: The leader of this round is <strong>{isLeader ? "YOU!" : this.state.gamedata.leader.name}</strong></p>
                   <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
                   {submissionForm}
                   {submissionList}
                   {advanceButton}
-                  <ul>{userScores}</ul>
+                  <ul>{playerScores}</ul>
                 </div>
               );
             }
@@ -118,7 +118,7 @@
                 let showScore = false;
                 numPlayers++;
                 return (
-                  <Player name={player.name} key={player.id} score={player.score} showScore={showScore} />
+                  <li key={player.id}><strong>{player.name}</strong> has joined.</li>
                 );
               });
             }
@@ -141,20 +141,6 @@
           } else {
             return (<JoinForm onRoomStart={this.handleRoomStart} />);
           }
-        }
-      });
-
-      let Leader = React.createClass({
-        render: function() {
-          let leader;
-          if (this.props.isLeader) {
-            leader = "YOU!";
-          } else {
-            leader = this.props.leader.name;
-          }
-          return (
-            <p>Round {this.props.round}: The leader of this round is <strong>{leader}</strong></p>
-          );
         }
       });
 
@@ -306,12 +292,12 @@
           let submissionNodes;
           let prompt = this.props.prompt
           let isLeader = this.props.isLeader;
-          let user = this.props.self;
+          let player = this.props.self;
           if (this.props.submissions != '') {
             if (this.props.submissions.length == this.props.num_players) {
               submissionNodes = this.props.submissions.map(function(submission) {
                 return (
-                  <Submission author={submission.author} isLeader={isLeader} prompt={prompt} key={submission.id} self={user} votes={submission.votes} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
+                  <Submission author={submission.author} isLeader={isLeader} prompt={prompt} key={submission.id} self={player} votes={submission.votes} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
                 );
               });
             } else {
@@ -365,28 +351,6 @@
               <strong>{this.props.prompt}</strong> {this.props.text} - Votes: {this.props.votes}{author}{voteButton}
             </li>
           );
-        }
-      });
-      
-      let Player = React.createClass({
-        render: function() {
-          if (this.props.showScore) {
-            return (
-              <li className="player">
-                <strong>
-                  {this.props.name}
-                </strong> has {this.props.score} points.
-              </li>
-            )
-          } else {
-            return (
-              <li className="player">
-                <strong>
-                  {this.props.name}
-                </strong> has joined.
-              </li>
-            );
-          }
         }
       });
 
