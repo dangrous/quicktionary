@@ -1,0 +1,4 @@
+# ignore these compiled files that need not be copied
+*.pyc
+*.db
+old-stuff/
