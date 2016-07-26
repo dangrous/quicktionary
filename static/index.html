@@ -14,8 +14,6 @@
     <div id="content"></div>
     <script type="text/babel">
  
-      let gameDataInterval;
-
       let Game = React.createClass({
         getInitialState: function() {
           return {gamedata:'', players:'', self: '', submissions: '', joined: false};
@@ -30,9 +28,9 @@
               success: function(data) {
                 this.setState({gamedata: data.gamedata, players: data.players, submissions: data.submissions});
                 for (var player in data.players) {
-                	if (data.players[player].id == this.state.self.id) {
-                		this.setState({self: data.players[player]});
-                	}
+                  if (data.players[player].id == this.state.self.id) {
+                    this.setState({self: data.players[player]});
+                  }
                 }
               }.bind(this)
             });
@@ -56,7 +54,7 @@
           });
         },
         advanceRound: function() {
-        	$.ajax({
+          $.ajax({
             url: "/advance",
             dataType: 'json',
             type: 'POST',
@@ -72,17 +70,17 @@
             let isLeader = false;
             let userScores;
             if (this.state.gamedata.votes == 0 || this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
-            	let showScore = true;
-            	userScores = this.state.players.map(function(player) {
-	                return (
-	                  <Player name={player.name} key={player.id} score={player.score} showScore={showScore} />
-	                );
-              	});
+              let showScore = true;
+              userScores = this.state.players.map(function(player) {
+                return (
+                  <Player name={player.name} key={player.id} score={player.score} showScore={showScore} />
+                );
+              });
             }
             if (this.state.gamedata.leader.id == this.state.self.id) {
               isLeader = true;
               if (this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
-              	advanceButton = <button type="button" onClick={this.advanceRound}>Advance Round</button>;
+                advanceButton = <button type="button" onClick={this.advanceRound}>Advance Round</button>;
               }
             }
             if (this.state.gamedata.num_round > 0) {
@@ -90,18 +88,18 @@
               let selfId = this.state.self.id;
               let hasVoted = this.state.self.has_voted;
               if (!this.state.gamedata.prompt) {
-              	submissionForm = '';
+                submissionForm = '';
               }
               if (this.state.submissions != '') {
-              	this.state.submissions.map(function(submission) {
-              		if (submission.author.id == selfId) {
-              			submissionForm = '';
-              		}
-              	});
+                this.state.submissions.map(function(submission) {
+                  if (submission.author.id == selfId) {
+                    submissionForm = '';
+                  }
+                });
               }
               let submissionList;
               if (this.state.gamedata.prompt) {
-              	submissionList = <SubmissionList prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} isLeader={isLeader} />
+                submissionList = <SubmissionList prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} isLeader={isLeader} />
               }
               return (
                 <div>
@@ -147,17 +145,17 @@
       });
 
       let Leader = React.createClass({
-      	render: function() {
-      		let leader;
+        render: function() {
+          let leader;
           if (this.props.isLeader) {
             leader = "YOU!";
           } else {
             leader = this.props.leader.name;
           }
           return (
-      			<p>Round {this.props.round}: The leader of this round is <strong>{leader}</strong></p>
-      		);
-      	}
+            <p>Round {this.props.round}: The leader of this round is <strong>{leader}</strong></p>
+          );
+        }
       });
 
       let JoinForm = React.createClass({
@@ -211,7 +209,8 @@
                   name="name"
                 /><button type="button" onClick={this.joinRoom}>Join Game</button>
               </form>
-            </div>)
+            </div>
+          );
         }
       });
 
@@ -271,33 +270,33 @@
 
       let SubmissionForm = React.createClass({
         getInitialState: function() {
-        	return {submission: ''};
+          return {submission: ''};
         },
         handleSubmissionChange: function(e) {
-        	this.setState({submission: e.target.value});
+          this.setState({submission: e.target.value});
         },
         addSubmission: function() {
-        	$.ajax({
-        		url: "/submit",
-        		dataType: 'json',
-        		type: 'POST',
-        		data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
-        	});
+          $.ajax({
+            url: "/submit",
+            dataType: 'json',
+            type: 'POST',
+            data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
+          });
         },
         render: function() {
           return (
-          	<div>
-          		<form className="addSubmission">
-          			<input
-          				type="text"
-          				placeholder="Enter Your Answer to the Prompt"
-          				value={this.state.submission}
-          				onChange={this.handleSubmissionChange}
-          				name="submission"
-          			/>
-          			<button type="button" onClick={this.addSubmission}>Enter Submission</button>
-          		</form>
-          	</div>
+            <div>
+              <form className="addSubmission">
+                <input
+                  type="text"
+                  placeholder="Enter Your Answer to the Prompt"
+                  value={this.state.submission}
+                  onChange={this.handleSubmissionChange}
+                  name="submission"
+                />
+                <button type="button" onClick={this.addSubmission}>Enter Submission</button>
+              </form>
+            </div>
           );
         }
       });
@@ -309,89 +308,85 @@
           let isLeader = this.props.isLeader;
           let user = this.props.self;
           if (this.props.submissions != '') {
-	        if (this.props.submissions.length == this.props.num_players) {
-	        	submissionNodes = this.props.submissions.map(function(submission) {
-		            return (
-		              <Submission author={submission.author} isLeader={isLeader} prompt={prompt} key={submission.id} self={user} votes={submission.votes} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
-		            );
-	          	});
-	        } else {
-	            if (this.props.submissions.length == 1) {
-	            	return (
-	            		<li>1 person has submitted.</li>
-	            	)
-	            } else {
-		            return (
-		              <li>{this.props.submissions.length} people have submitted.</li>
-		            );
-		        }
-	        }
-	         
-	      } else {
-	      	submissionNodes = <li>No one has submitted yet.</li>;
-	      }
+            if (this.props.submissions.length == this.props.num_players) {
+              submissionNodes = this.props.submissions.map(function(submission) {
+                return (
+                  <Submission author={submission.author} isLeader={isLeader} prompt={prompt} key={submission.id} self={user} votes={submission.votes} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
+                );
+              });
+            } else {
+                if (this.props.submissions.length == 1) {
+                  return (
+                    <li>1 person has submitted.</li>
+                  )
+                } else {
+                  return (
+                    <li>{this.props.submissions.length} people have submitted.</li>
+                  );
+              }
+            }
+           
+          } else {
+            submissionNodes = <li>No one has submitted yet.</li>;
+          }
 
           return (<ul>{submissionNodes}</ul>);
         }
       });
 
       let Submission = React.createClass({
-      	revealSubmission: function() {
-      		$.ajax({
-        		url: "/reveal",
-        		dataType: 'json',
-        		type: 'POST',
-        		data: {submission: this.props.submission}
-        	});
-      	},
-      	voteOnSubmission: function() {
-      		$.ajax({
-      			url: "/vote",
-      			dataType: 'json',
-      			type: 'POST',
-      			data: {submission: this.props.submission, player: this.props.self.id}
-      		});
-      	},
-      	render: function() {
-      		let author;
-      		let revealButton;
-   			let voteButton;
-   			if (!this.props.self.has_voted && this.props.author.id != this.props.self.id && !this.props.isLeader) {
-   				voteButton = <button type="button" onClick={this.voteOnSubmission}>Vote for this Submission</button>;
-   			}
-      		if (this.props.showAuth) {
-      			author = <span> - {this.props.author.name}</span>;
-      		}
-      		if (this.props.isLeader) {
-      			revealButton = <button type="button" onClick={this.revealSubmission}>Reveal Author</button>;
-      		}
-      		return (
-      			<li className="submission">
-      				<strong>{this.props.prompt}</strong> {this.props.text} - Votes: {this.props.votes}{author}{voteButton}{revealButton}
-      			</li>
-      		);
-      	}
+        revealSubmission: function() {
+          $.ajax({
+            url: "/reveal",
+            dataType: 'json',
+            type: 'POST',
+            data: {submission: this.props.submission}
+          });
+        },
+        voteOnSubmission: function() {
+          $.ajax({
+            url: "/vote",
+            dataType: 'json',
+            type: 'POST',
+            data: {submission: this.props.submission, player: this.props.self.id}
+          });
+        },
+        render: function() {
+          let author;
+        let voteButton;
+        if (!this.props.self.has_voted && this.props.author.id != this.props.self.id && !this.props.isLeader) {
+          voteButton = <button type="button" onClick={this.voteOnSubmission}>Vote for this Submission</button>;
+        }
+          if (this.props.showAuth) {
+            author = <span> - {this.props.author.name}</span>;
+          }
+          return (
+            <li className="submission">
+              <strong>{this.props.prompt}</strong> {this.props.text} - Votes: {this.props.votes}{author}{voteButton}
+            </li>
+          );
+        }
       });
       
       let Player = React.createClass({
         render: function() {
           if (this.props.showScore) {
-          	return (
-	          	<li className="player">
-	              <strong>
-	                {this.props.name}
-	              </strong> has {this.props.score} points.
-	            </li>
-          	)
+            return (
+              <li className="player">
+                <strong>
+                  {this.props.name}
+                </strong> has {this.props.score} points.
+              </li>
+            )
           } else {
-	          return (
-	            <li className="player">
-	              <strong>
-	                {this.props.name}
-	              </strong> has joined.
-	            </li>
-	          );
-	       }
+            return (
+              <li className="player">
+                <strong>
+                  {this.props.name}
+                </strong> has joined.
+              </li>
+            );
+          }
         }
       });
 
