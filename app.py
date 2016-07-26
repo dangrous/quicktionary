@@ -65,7 +65,6 @@ def start_game():
     room = Room.get(Room.id == request.form['room'])
     first_player = User.get(User.room_id == room.id, User.order_in_room == random.randint(1, room.num_players))
     room.leader = first_player
-    print room.leader.name
     room.num_round = 1
     room.save()
     return "Game started"
@@ -109,8 +108,40 @@ def advance_round():
 	next_player = User.get(User.room_id == room.id, User.order_in_room == room.leader.order_in_room % room.num_players + 1)
 	room.leader = next_player
 	room.prompt = None
+	room.votes = 0
 	room.save()
+	users = User.select().where(User.room_id == room.id)
+	for user in users:
+		user.has_voted = False
+		user.save()
 	return "Begun next round."
+
+@app.route('/vote', methods=['POST'])
+def vote():
+	submission = Submission.get(Submission.id == request.form['submission'])
+	submission.votes += 1
+	submission.save()
+	room = submission.room
+	room.votes += 1
+	room.save()
+	author = submission.author
+	user = User.get(User.id == request.form['player'])
+	user.has_voted = True
+	if not author == room.leader:
+		author.score += 1
+	else:
+		user.score += 1
+	author.save()
+	user.save()
+	all_subs = Submission.select().where(Submission.room == room)
+	vote_count = 0
+	for submission in all_subs:
+		vote_count += submission.votes
+	if vote_count == room.num_players:
+		for submission in all_subs:
+			submission.show_auth = True
+			submission.save()
+	return "vote counted"
 
 def get_room_code():
     return ''.join(random.choice(string.ascii_uppercase) for n in range(5))

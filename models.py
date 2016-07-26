@@ -12,6 +12,8 @@ class User(BaseModel):
     name = CharField()
     room_id = IntegerField(null=True)
     order_in_room = IntegerField(default=0)
+    score = IntegerField(default=0)
+    has_voted = BooleanField(default=False)
 
 class Room(BaseModel):
     id = PrimaryKeyField()
@@ -21,9 +23,10 @@ class Room(BaseModel):
     num_players = IntegerField(default=0)
     last_active = DateTimeField(default=datetime.datetime.now)
     # do I need this next one?
-    show_subs = BooleanField(default=False)
+    # show_subs = BooleanField(default=False)
     num_round = IntegerField(default=0)
     prompt = CharField(null=True)
+    votes = IntegerField(default=0)
 
 class Submission(BaseModel):
     id = PrimaryKeyField()
@@ -32,6 +35,7 @@ class Submission(BaseModel):
     room = ForeignKeyField(Room)
     show_auth = BooleanField(default=False)
     randomizer = FloatField()
+    votes = IntegerField(default=0)
 
 def initialize_db():
     db.connect()
