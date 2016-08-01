@@ -2,16 +2,23 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>The Game of Things</title>
+    <title>Dictionary</title>
     <link rel="stylesheet" href="css/base.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.6.16/browser.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" integrity="sha384-MIwDKRSSImVFAZCVLtU0LMDdON6KVCrZHyVQQj6e8wIEJkW4tvwqXrbMIya1vriY" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/js/bootstrap.min.js" integrity="sha384-ux8v3A6CPtOTqOzMKiuo3d/DomGaaClxFYdCu2HPMBEkf6x2xiDyJ7gkXU0MWwaD" crossorigin="anonymous"></script>
   </head>
-  <body>
-    <h1>The Game of Things</h1>
-    <div id="content"></div>
+  <body style="text-align: center;">
+    <div class="container" id="header">
+      <div class="row">
+      	<h1 id="title">Dictionary</h1>
+      </div>
+    </div>
+    <div class="container" id="game"></div>
     <script type="text/babel">
  
       let Game = React.createClass({
@@ -26,7 +33,7 @@
               type: 'POST',
               data: {room: this.state.gamedata.id},
               success: function(data) {
-                this.setState({gamedata: data.gamedata, players: data.players, submissions: data.submissions});
+                this.setState({gamedata: data.gamedata, players: data.players, submissions: data.submissions, votes: data.votes});
                 for (var player in data.players) {
                   if (data.players[player].id == this.state.self.id) {
                     this.setState({self: data.players[player]});
@@ -64,47 +71,41 @@
         render: function() {
           if (this.state.joined) {
             let advanceButton;
-            let roomCode = this.state.gamedata.code;
             let playerNodes;
             let numPlayers = 0;
-            let isLeader = false;
             let playerScores;
-            if (this.state.gamedata.votes == 0 || this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
-              let showScore = true;
+            if (this.state.gamedata.votes == 0 || this.state.gamedata.votes == this.state.gamedata.num_players) {
               playerScores = this.state.players.map(function(player) {
                 return (
                   <li key={player.id}><strong>{player.name}</strong> has {player.score} points.</li>
                 );
               });
             }
-            if (this.state.gamedata.leader.id == this.state.self.id) {
-              isLeader = true;
-              if (this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
-                advanceButton = <button type="button" onClick={this.advanceRound}>Advance Round</button>;
+            if (this.state.self.is_leader) {
+              if (this.state.gamedata.votes == this.state.gamedata.num_players) {
+                advanceButton = <button className="btn btn-secondary" type="button" onClick={this.advanceRound}>Next Round</button>;
               }
             }
-            if (this.state.gamedata.num_round > 0) {
+            if (this.state.gamedata.round_num > 0) {
               let submissionForm = <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />;
-              let selfId = this.state.self.id;
-              let hasVoted = this.state.self.has_voted;
               if (!this.state.gamedata.prompt) {
                 submissionForm = '';
               }
               if (this.state.submissions != '') {
-                this.state.submissions.map(function(submission) {
-                  if (submission.author.id == selfId) {
+                this.state.submissions.forEach(function(submission) {
+                  if (submission.author.id == this.state.self.id) {
                     submissionForm = '';
                   }
-                });
+                }.bind(this));
               }
               let submissionList;
               if (this.state.gamedata.prompt) {
-                submissionList = <SubmissionList prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} isLeader={isLeader} />
+                submissionList = <SubmissionList votes={this.state.votes} prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
               }
               return (
                 <div>
-                  <p>Round {this.state.gamedata.num_round}: The leader of this round is <strong>{isLeader ? "YOU!" : this.state.gamedata.leader.name}</strong></p>
-                  <Prompt isLeader={isLeader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
+                  <p>Round {this.state.gamedata.round_num}: The leader of this round is <strong>{this.state.self.is_leader ? "YOU!" : this.state.gamedata.leader.name}</strong></p>
+                  <Prompt isLeader={this.state.self.is_leader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
                   {submissionForm}
                   {submissionList}
                   {advanceButton}
@@ -115,7 +116,6 @@
 
             if (this.state.players != '') {
               playerNodes = this.state.players.map(function(player) {
-                let showScore = false;
                 numPlayers++;
                 return (
                   <li key={player.id}><strong>{player.name}</strong> has joined.</li>
@@ -125,14 +125,14 @@
 
             let startButton;
             if (this.state.gamedata.owner.id == this.state.self.id) {
-              startButton = <p>Are all players ready? Then <button onClick={this.handleGameStart}>Start Game</button></p>;
+              startButton = <p>Are all players ready? Then <button className="btn btn-secondary" onClick={this.handleGameStart}>Start Game</button></p>;
             } else {
               startButton = '';
             }
 
             return (
               <div>
-                <p id="roomCode">The room code is {roomCode}</p>
+                <p id="roomCode">The room code is {this.state.gamedata.code}</p>
                 <p id="numPlayers">There are {numPlayers} players.</p>
                 <ul id="players">{playerNodes}</ul>
                 {startButton}
@@ -149,51 +149,89 @@
           return {code: '', name: ''};
         },
         handleCodeChange: function(e) {
-          this.setState({code: e.target.value});
+          this.setState({code: e.target.value.toLowerCase()});
         },
         handleNameChange: function(e) {
           this.setState({name: e.target.value});
         },
-        startRoom: function() {
-          $.ajax({
-            url: "/connect",
-            dataType: 'json',
-            type: 'POST',
-            data: {name: this.state.name, action: "start"},
-            success: function(data) {
-              this.props.onRoomStart(data);
-            }.bind(this)
-          });
+        startRoom: function(e) {
+          e.preventDefault();
+          if (this.state.name == '') {
+          	alert("Please enter your name");
+          } else {
+            $.ajax({
+              url: "/connect",
+              dataType: 'json',
+              type: 'POST',
+              data: {name: this.state.name, action: "start"},
+              success: function(data) {
+                this.props.onRoomStart(data);
+              }.bind(this)
+            });
+          }
         },
-        joinRoom: function() {
-          $.ajax({
-            url: "/connect",
-            dataType: 'json',
-            type: 'POST',
-            data: {name: this.state.name, action: "join", code: this.state.code},
-            success: function(data) {
-              this.props.onRoomStart(data);
-            }.bind(this)
-          });
+        joinRoom: function(e) {
+          e.preventDefault();
+          if (this.state.name == '') {
+            alert("Please enter your name");
+          } else if (this.state.code == '' || this.state.code.length != 6 || this.state.code.search(/[^A-Za-z]/) != -1) {
+            alert("Please double check your room code");
+          } else {
+            $.ajax({
+              url: "/connect",
+              dataType: 'json',
+              type: 'POST',
+              data: {name: this.state.name, action: "join", code: this.state.code},
+              success: function(data) {
+                console.log(data);
+                if (data.error) {
+                  alert(data.error);
+                } else {
+                  this.props.onRoomStart(data);
+                }
+              }.bind(this)
+            });
+          }
         },
         render: function() {
           return (
             <div>
               <form className="joinRoom">
-                <input
-                  type="text"
-                  placeholder="Enter Your Name"
-                  value={this.state.name}
-                  onChange={this.handleNameChange}
-                  name="name"
-                />
-                <button type="button" onClick={this.startRoom}>Start Game</button> or <input
-                  type="text"
-                  placeholder="Room Code"
-                  value={this.state.code}
-                  onChange={this.handleCodeChange}
-                  name="name"
-                /><button type="button" onClick={this.joinRoom}>Join Game</button>
+                <div className="form-group">
+	                <input
+	                  className="form-control"
+	                  type="text"
+	                  id="name"
+	                  placeholder="Enter Your Name"
+	                  value={this.state.name}
+	                  onChange={this.handleNameChange}
+	                  name="name"
+	                  required
+	                />
+                </div>
+                <div className="form-group row">   
+                  <div className="col-md-3">
+                  	<input className="btn btn-primary col-xs-12" type="submit" onClick={this.startRoom} value="Start Game" />
+                  </div>
+                  <div className="col-md-3">
+                  	<p className="form-control-static">{' or '}</p>
+                  </div>
+                 	<div className="col-md-6">
+	                  <div className="input-group">
+	                    <input
+	                      className="form-control"
+	                      type="text"
+	                      placeholder="Room Code"
+	                      value={this.state.code}
+	                      onChange={this.handleCodeChange}
+	                      name="name"
+	                    />
+	                    <span className="input-group-btn">
+	                      <button className="btn btn-primary" type="submit" onClick={this.joinRoom}>Join Game</button>
+	                    </span>
+	                  </div>
+	                </div>
+                </div>
               </form>
             </div>
           );
@@ -208,12 +246,16 @@
           this.setState({prompt: e.target.value});
         },
         enterPrompt: function() {
-          $.ajax({
-            url: "/prompt",
-            dataType: 'json',
-            type: 'POST',
-            data: {action: "set", prompt: this.state.prompt, room: this.props.room},
-          });
+          if (this.state.prompt == '') {
+            alert("Prompt cannot be blank.");
+          } else {
+            $.ajax({
+              url: "/prompt",
+              dataType: 'json',
+              type: 'POST',
+              data: {action: "set", prompt: this.state.prompt, room: this.props.room},
+            });
+          }
         },
         editPrompt: function() {
           $.ajax({
@@ -227,7 +269,7 @@
           if (this.props.prompt) {
             let editButton;
             if (this.props.isLeader) {
-              editButton = <button type="button" onClick={this.editPrompt}>Edit Prompt</button>
+              editButton = <button className="btn btn-secondary" type="button" onClick={this.editPrompt}>Edit Prompt</button>
             }
 
             return(<p>The prompt is <strong>"{this.props.prompt}"</strong>{editButton}</p>);
@@ -238,17 +280,18 @@
                   <form className="enterPrompt">
                     <input
                       type="text"
+                      className="form-control"
                       placeholder="Enter the Round Prompt"
                       value={this.state.prompt}
                       onChange={this.handlePromptChange}
                       name="prompt"
                     />
-                    <button type="button" onClick={this.enterPrompt}>Enter Prompt</button>
+                    <button className="btn btn-secondary" type="button" onClick={this.enterPrompt}>Enter Prompt</button>
                   </form>
                 </div>
               );
             } else {
-              return(<p>The prompt has not yet been entered.</p>);
+              return(<p>The prompt for this round has not yet been entered.</p>);
             }
           }
         }
@@ -262,12 +305,16 @@
           this.setState({submission: e.target.value});
         },
         addSubmission: function() {
-          $.ajax({
-            url: "/submit",
-            dataType: 'json',
-            type: 'POST',
-            data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
-          });
+          if (this.state.submission == '') {
+            alert("Submission cannot be blank.");
+          } else {
+            $.ajax({
+              url: "/submit",
+              dataType: 'json',
+              type: 'POST',
+              data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
+            });
+          }
         },
         render: function() {
           return (
@@ -275,12 +322,13 @@
               <form className="addSubmission">
                 <input
                   type="text"
+                  className="form-control"
                   placeholder="Enter Your Answer to the Prompt"
                   value={this.state.submission}
                   onChange={this.handleSubmissionChange}
                   name="submission"
                 />
-                <button type="button" onClick={this.addSubmission}>Enter Submission</button>
+                <button className="btn btn-secondary" type="button" onClick={this.addSubmission}>Enter Submission</button>
               </form>
             </div>
           );
@@ -288,18 +336,24 @@
       });
 
       let SubmissionList = React.createClass({
+        handleVote: function(subId) {
+          $.ajax({
+            url: "/vote",
+            dataType: 'json',
+            type: 'POST',
+            data: {submission: subId, player: this.props.self.id}
+          });
+        },
         render: function() {
           let submissionNodes;
-          let prompt = this.props.prompt
-          let isLeader = this.props.isLeader;
-          let player = this.props.self;
           if (this.props.submissions != '') {
             if (this.props.submissions.length == this.props.num_players) {
               submissionNodes = this.props.submissions.map(function(submission) {
+                
                 return (
-                  <Submission author={submission.author} isLeader={isLeader} prompt={prompt} key={submission.id} self={player} votes={submission.votes} submission={submission.id} text={submission.text} showAuth={submission.show_auth} isLeader={isLeader} />
+                  <Submission onVote={this.handleVote} submission={submission} prompt={this.props.prompt} key={submission.id} self={this.props.self} votes={this.props.votes}/>
                 );
-              });
+              }.bind(this));
             } else {
                 if (this.props.submissions.length == 1) {
                   return (
@@ -321,34 +375,27 @@
       });
 
       let Submission = React.createClass({
-        revealSubmission: function() {
-          $.ajax({
-            url: "/reveal",
-            dataType: 'json',
-            type: 'POST',
-            data: {submission: this.props.submission}
-          });
-        },
-        voteOnSubmission: function() {
-          $.ajax({
-            url: "/vote",
-            dataType: 'json',
-            type: 'POST',
-            data: {submission: this.props.submission, player: this.props.self.id}
-          });
+        onVote: function() {
+          this.props.onVote(this.props.submission.id);
         },
         render: function() {
           let author;
-        let voteButton;
-        if (!this.props.self.has_voted && this.props.author.id != this.props.self.id && !this.props.isLeader) {
-          voteButton = <button type="button" onClick={this.voteOnSubmission}>Vote for this Submission</button>;
-        }
-          if (this.props.showAuth) {
-            author = <span> - {this.props.author.name}</span>;
+          let voteButton;
+          let voteNodes = [];
+          this.props.votes.forEach(function(vote) {
+            if (vote.submission.id == this.props.submission.id) {
+              voteNodes.push(<span key={vote.id}> {vote.voter.name}</span>);
+            }
+          }.bind(this));
+          if (!this.props.self.has_voted) {
+            voteButton = <button className="btn btn-secondary" type="button" onClick={this.onVote}>Vote for this Submission</button>;
+          }
+          if (this.props.submission.show_auth) {
+            author = <span> - {this.props.submission.author.name}</span>;
           }
           return (
             <li className="submission">
-              <strong>{this.props.prompt}</strong> {this.props.text} - Votes: {this.props.votes}{author}{voteButton}
+              <strong>{this.props.prompt}</strong> {this.props.submission.text} - Votes: {voteNodes}{author}{voteButton}
             </li>
           );
         }
@@ -356,7 +403,7 @@
 
       ReactDOM.render(
         <Game />,
-        document.getElementById('content')
+        document.getElementById('game')
       );
     </script>
   </body>

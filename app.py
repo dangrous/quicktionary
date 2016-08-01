@@ -1,4 +1,5 @@
 import json
+import urllib2
 import string
 import random
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -23,34 +24,48 @@ def home():
 def get_game_data():
     room = Room.get(Room.id == request.form['room'])
     players = Player.select().where(Player.room_id == room.id)
-    submission_count = Submission.select().where(Submission.room == room).count()
+    submission_count = Submission.select().where(Submission.room == room, Submission.round_num == room.round_num).count()
     if submission_count > 0:
         if submission_count == room.num_players:
-            submissions = Submission.select().where(Submission.room == room).order_by(Submission.randomizer)
+            submissions = Submission.select().where(Submission.room == room, Submission.round_num == room.round_num).order_by(Submission.randomizer)
         else:
-            submissions = Submission.select().where(Submission.room == room)
+            submissions = Submission.select().where(Submission.room == room, Submission.round_num == room.round_num)
         submissions = [model_to_dict(submission) for submission in submissions]
     else:
         submissions = ''
-    return jsonify(gamedata=model_to_dict(room), submissions=submissions, players=[model_to_dict(player) for player in players])
+    vote_count = Vote.select().where(Vote.room == room, Vote.round_num == room.round_num).count()
+    if vote_count > 0:
+        votes = Vote.select().where(Vote.room == room, Vote.round_num == room.round_num)
+    else:
+        votes = ''
+    return jsonify(gamedata=model_to_dict(room), submissions=submissions, players=[model_to_dict(player) for player in players], votes=[model_to_dict(vote) for vote in votes])
 
 @app.route('/connect', methods=['POST'])
 def join_game():
-    player = Player.create(
-        name=request.form['name']
-    )
     if request.form['action'] == "start":
-        # will need to check if it already exists.
+        player = Player.create(
+            name=request.form['name']
+        )
         code = get_room_code()
+        while Room.select().where(Room.code == code).exists():
+            code = get_room_code()
         room = Room.create(
             code=code,
             owner=player
         )
-        owner = True
     else:
-        room = Room.get(Room.code == request.form['code'])
-        owner = False
+        try:
+            room = Room.get(Room.code == request.form['code'])
+        except:
+            return jsonify(error="Sorry, we couldn't find that room. Please try again.")
+        if Player.select().where(Player.name == request.form['name'], Player.room_id == room.id).exists():
+            return jsonify(error="Sorry, someone has already joined with that name. Please try again.")
+        else:
+            player = Player.create(
+                name=request.form['name']
+            )
     # When many people joining quickly, this will not work I think.
+    print "setting up shit"
     room.num_players += 1
     room.save()
     player.room_id = room.id
@@ -65,7 +80,9 @@ def start_game():
     room = Room.get(Room.id == request.form['room'])
     first_player = Player.get(Player.room_id == room.id, Player.order_in_room == random.randint(1, room.num_players))
     room.leader = first_player
-    room.num_round = 1
+    first_player.is_leader = True
+    first_player.save()
+    room.round_num = 1
     room.save()
     return "Game started"
 
@@ -88,7 +105,8 @@ def handle_submissions():
         text = request.form['submission'],
         author = player,
         room = room,
-        randomizer = random.random()
+        randomizer = random.random(),
+        round_num = room.round_num
     )
     return "Submission added"
 
@@ -101,17 +119,19 @@ def reveal_submission():
 
 @app.route('/advance', methods=['POST'])
 def advance_round():
-    delete_subs = Submission.delete().where(Submission.room_id == request.form['room'])
-    delete_subs.execute()
     room = Room.get(Room.id == request.form['room'])
-    room.num_round = room.num_round + 1
+    room.round_num = room.round_num + 1
     next_player = Player.get(Player.room_id == room.id, Player.order_in_room == room.leader.order_in_room % room.num_players + 1)
+    room.leader.is_leader = False
+    room.leader.save()
     room.leader = next_player
+    next_player.is_leader = True
     room.prompt = None
     room.votes = 0
     room.save()
+    next_player.save()
     players = Player.select().where(Player.room_id == room.id)
-    for player in playerss:
+    for player in players:
         player.has_voted = False
         player.save()
     return "Begun next round."
@@ -136,7 +156,8 @@ def vote():
     vote = Vote.create(
         room = room,
         voter = player,
-        submission = submission
+        submission = submission,
+        round_num = room.round_num
     )
     all_subs = Submission.select().where(Submission.room == room)
     vote_count = 0
@@ -149,7 +170,13 @@ def vote():
     return "vote counted"
 
 def get_room_code():
-    return ''.join(random.choice(string.ascii_uppercase) for n in range(5))
+    # more fun but fewer options - will need to delete old games if we do this, or add a recent option to all searches
+    url = "http://randomword.setgetgo.com/get.php?len=" + str(random.randint(5,10))
+    try: 
+        randword = urllib2.urlopen(url, timeout=1).read()
+        return randword
+    except:
+        return ''.join(random.choice(string.ascii_lowercase) for n in range(6))
 
 if __name__ == '__main__':
     app.run(debug=True)
