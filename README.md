@@ -1,9 +1,9 @@
-This will be an awesome app to play party games such as Wise and Otherwise or the Game of Things.
+This will be an awesome app to play party games such as Dictionary, Wise and Otherwise, or the Game of Things.
 
-Stack (in theory):
-Bootstrap
-React.js
-Flask
-peewee
+* Stack:
+* Bootstrap
+* React.js
+* Flask
+* peewee
 
-All code is open source. Or will be once it exists.
+All code is licensed under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/)
