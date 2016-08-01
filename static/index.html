@@ -17,10 +17,24 @@
       <div class="row">
       	<h1 id="title">Dictionary</h1>
       </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="alert alert-danger alert-dismissible" role="alert" id="error">
+            <button type="button" class="close"aria-label="Close" id="errorClose"><span aria-hidden="true">&times;</span></button>
+            <strong>Oops!</strong> <span id="errorText"></span>
+          </div>
+        </div>
+      </div>
     </div>
+
     <div class="container" id="game"></div>
     <script type="text/babel">
  
+      $("#error").hide();
+      $("#errorClose").click(function() {
+        $("#error").hide();
+      });
+      
       let Game = React.createClass({
         getInitialState: function() {
           return {gamedata:'', players:'', self: '', submissions: '', joined: false};
@@ -157,7 +171,8 @@
         startRoom: function(e) {
           e.preventDefault();
           if (this.state.name == '') {
-          	alert("Please enter your name");
+            $("#errorText").html("Please enter your name.");
+            $("#error").show();
           } else {
             $.ajax({
               url: "/connect",
@@ -173,9 +188,11 @@
         joinRoom: function(e) {
           e.preventDefault();
           if (this.state.name == '') {
-            alert("Please enter your name");
+            $("#errorText").html("Please enter your name.");
+            $("#error").show();
           } else if (this.state.code == '' || this.state.code.length != 6 || this.state.code.search(/[^A-Za-z]/) != -1) {
-            alert("Please double check your room code");
+            $("#errorText").html("Please double check your room code!");
+            $("#error").show();
           } else {
             $.ajax({
               url: "/connect",
@@ -185,7 +202,8 @@
               success: function(data) {
                 console.log(data);
                 if (data.error) {
-                  alert(data.error);
+                  $("#errorText").html(data.error);
+                  $("#error").show();
                 } else {
                   this.props.onRoomStart(data);
                 }
@@ -211,7 +229,7 @@
                 </div>
                 <div className="form-group row">   
                   <div className="col-md-3">
-                  	<input className="btn btn-primary col-xs-12" type="submit" onClick={this.startRoom} value="Start Game" />
+                  	<button className="btn btn-primary btn-block" type="button" onClick={this.startRoom}>Start Game</button>
                   </div>
                   <div className="col-md-3">
                   	<p className="form-control-static">{' or '}</p>
@@ -227,7 +245,7 @@
 	                      name="name"
 	                    />
 	                    <span className="input-group-btn">
-	                      <button className="btn btn-primary" type="submit" onClick={this.joinRoom}>Join Game</button>
+	                      <button className="btn btn-primary" type="button" onClick={this.joinRoom}>Join Game</button>
 	                    </span>
 	                  </div>
 	                </div>
@@ -247,7 +265,8 @@
         },
         enterPrompt: function() {
           if (this.state.prompt == '') {
-            alert("Prompt cannot be blank.");
+            $("#errorText").html("Prompt cannot be blank.");
+            $("#error").show();
           } else {
             $.ajax({
               url: "/prompt",
@@ -306,7 +325,8 @@
         },
         addSubmission: function() {
           if (this.state.submission == '') {
-            alert("Submission cannot be blank.");
+            $("#errorText").html("Submission cannot be blank.");
+            $("#error").show();
           } else {
             $.ajax({
               url: "/submit",
