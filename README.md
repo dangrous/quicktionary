@@ -1,6 +1,8 @@
+## Description
+
 This will be an awesome app to play party games such as Dictionary, Wise and Otherwise, or the Game of Things.
 
-* Stack:
+## Stack:
 * Bootstrap
 * React.js
 * Flask
