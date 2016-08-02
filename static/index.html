@@ -98,7 +98,7 @@
               });
               playerScores = this.state.players.map(function(player) {
                 return (
-                  <li className="list-group-item" key={player.id}><strong>{player.name}</strong> has {player.score} points.</li>
+                  <li className="list-group-item" key={player.id}><strong>{player.name}</strong> has {player.score} {player.score == 1? 'point' : 'points'}.</li>
                 );
               });
             }
