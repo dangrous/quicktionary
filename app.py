@@ -147,27 +147,27 @@ def vote():
     author = submission.author
     player = Player.get(Player.id == request.form['player'])
     player.has_voted = True
-    if not author == room.leader:
-        author.score += 1
-    else:
+    if author == room.leader:
         player.score += 1
-    author.save()
     player.save()
+    if author != room.leader:
+        author.score += 1
+    author.save()
     vote = Vote.create(
         room = room,
         voter = player,
         submission = submission,
         round_num = room.round_num
     )
-    all_subs = Submission.select().where(Submission.room == room)
+    all_subs = Submission.select().where(Submission.room == room, Submission.round_num == room.round_num)
     vote_count = 0
     for submission in all_subs:
         vote_count += submission.votes
-    if vote_count == room.num_players:
+    if vote_count == room.num_players - 1:
         for submission in all_subs:
             submission.show_auth = True
             submission.save()
-    return "vote counted"
+    return jsonify(success=True)
 
 def get_room_code():
     # more fun but fewer options - will need to delete old games if we do this, or add a recent option to all searches
