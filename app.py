@@ -173,7 +173,7 @@ def get_room_code():
     # more fun but fewer options - will need to delete old games if we do this, or add a recent option to all searches
     url = "http://randomword.setgetgo.com/get.php?len=" + str(random.randint(5,10))
     try: 
-        randword = urllib2.urlopen(url, timeout=1).read()
+        randword = urllib2.urlopen(url, timeout=1).read().lower()
         return randword
     except:
         return ''.join(random.choice(string.ascii_lowercase) for n in range(6))
