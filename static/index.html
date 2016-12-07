@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dictionary</title>
+    <title>Dictionary50</title>
     <link rel="stylesheet" href="css/base.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom.js"></script>
@@ -18,7 +18,7 @@
   <body style="text-align: center;">
     <div class="container" id="header">
       <div class="row">
-      	<h1 id="title">Dictionary</h1>
+      	<h1 id="title">Dictionary50</h1>
       </div>
       <div class="row">
         <div class="col-xs-12">
@@ -121,7 +121,7 @@
               }
               let submissionList;
               if (this.state.gamedata.prompt) {
-                submissionList = <SubmissionList votes={this.state.votes} prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
+                submissionList = <SubmissionList leaderCanVote={this.state.gamedata.leader_can_vote} selfCanVote={this.state.gamedata.can_vote_for_self} votes={this.state.votes} prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
               }
               return (
                 <div>
@@ -446,7 +446,7 @@
               submissionNodes = this.props.submissions.map(function(submission) {
                 
                 return (
-                  <Submission onVote={this.handleVote} submission={submission} prompt={this.props.prompt} key={submission.id} self={this.props.self} votes={this.props.votes}/>
+                  <Submission onVote={this.handleVote} leaderCanVote={this.props.leaderCanVote} selfCanVote={this.props.selfCanVote} submission={submission} prompt={this.props.prompt} key={submission.id} self={this.props.self} votes={this.props.votes}/>
                 );
               }.bind(this));
             } else {
@@ -490,7 +490,14 @@
             }
           }.bind(this));
           if (voteNodes.length > 0) votes = <small className="text-muted">Votes: {voteNodes}</small>;
-          if (!this.props.self.has_voted && !this.props.self.is_leader && this.props.submission.author.id != this.props.self.id) {
+          let okayToVote = true; 
+          if (!this.props.leaderCanVote && this.props.self.is_leader) {
+            okayToVote = false;
+          }
+          if (!this.props.selfCanVote && this.props.self.id == this.props.submission.author.id) {
+            okayToVote = false;
+          }
+          if (!this.props.self.has_voted && okayToVote) {
             voteButton = <button className="btn btn-secondary pull-xs-right btn-sm vote-button" type="button" onClick={this.onVote}><i className="fa fa-check"></i> Vote</button>;
           }
           if (this.props.submission.show_auth) {

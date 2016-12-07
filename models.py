@@ -25,6 +25,17 @@ class Room(BaseModel):
     round_num = IntegerField(default=0)
     prompt = CharField(null=True)
     votes = IntegerField(default=0)
+    # Game Characteristics
+    # EASY
+    leader_can_vote = BooleanField(default=False)
+    can_vote_for_self = BooleanField(default=False)
+    # FOR LATER
+    sub_can_be_revealed = BooleanField(default=False)
+    guess_player = BooleanField(default=False)
+    play_until = IntegerField(null=True)
+    rounds_or_score = BooleanField(default=False) # False is round limit, True is score limit
+    vote_points = IntegerField(default=1)
+    voted_points = IntegerField(default=1)
 
 class Submission(BaseModel):
     text = CharField()
@@ -40,6 +51,7 @@ class Vote(BaseModel):
     voter = ForeignKeyField(Player, related_name='voted_for')
     submission = ForeignKeyField(Submission, related_name='voted_for_by')
     round_num = IntegerField()
+    player_guess = ForeignKeyField(Player, related_name='guessed', null=True)
 
 def initialize_db():
     db.connect()

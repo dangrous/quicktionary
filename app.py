@@ -147,10 +147,10 @@ def vote():
     author = submission.author
     player = Player.get(Player.id == request.form['player'])
     player.has_voted = True
-    if author == room.leader:
+    if author == room.leader and author != player:
         player.score += 1
     player.save()
-    if author != room.leader:
+    if author != room.leader and author != player:
         author.score += 1
     author.save()
     vote = Vote.create(
@@ -163,7 +163,11 @@ def vote():
     vote_count = 0
     for submission in all_subs:
         vote_count += submission.votes
-    if vote_count == room.num_players - 1:
+    if room.leader_can_vote:
+        total_votes_needed = room.num_players
+    else:
+        total_votes_needed = room.num_players - 1
+    if vote_count == total_votes_needed:
         for submission in all_subs:
             submission.show_auth = True
             submission.save()
