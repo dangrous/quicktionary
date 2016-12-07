@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dictionary50</title>
+    <title>Quicktionary</title>
     <link rel="stylesheet" href="css/base.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom.js"></script>
@@ -18,7 +18,7 @@
   <body style="text-align: center;">
     <div class="container" id="header">
       <div class="row">
-      	<h1 id="title">Dictionary50</h1>
+      	<h1 id="title">Quicktionary</h1>
       </div>
       <div class="row">
         <div class="col-xs-12">
@@ -195,13 +195,27 @@
 
       let JoinForm = React.createClass({
         getInitialState: function() {
-          return {code: '', name: ''};
+          return {code: '', name: '', leaderCanVote: false, selfCanVote: false};
         },
         handleCodeChange: function(e) {
           this.setState({code: e.target.value.toLowerCase()});
         },
         handleNameChange: function(e) {
           this.setState({name: e.target.value});
+        },
+        handleLeaderChange: function(e) {
+          if (e.target.value == "Yes") {
+            this.setState({leaderCanVote: true});
+          } else {
+            this.setState({leaderCanVote: false});
+          }
+        },
+        handleSelfChange: function(e) {
+          if (e.target.value == "Yes") {
+            this.setState({selfCanVote: true});
+          } else {
+            this.setState({selfCanVote: false});
+          }
         },
         startRoom: function(e) {
           e.preventDefault();
@@ -213,9 +227,14 @@
               url: "/connect",
               dataType: 'json',
               type: 'POST',
-              data: {name: this.state.name, action: "start"},
+              data: {name: this.state.name, leaderCanVote: this.state.leaderCanVote, selfCanVote: this.state.selfCanVote, action: "start"},
               success: function(data) {
-                this.props.onRoomStart(data);
+                if (data.error) {
+                  $("#errorText").html(data.error);
+                  $("#error").show();
+                } else {
+                  this.props.onRoomStart(data);
+                }
               }.bind(this)
             });
           }
@@ -263,27 +282,44 @@
 	                />
                 </div>
                 <div className="form-group row">   
-                  <div className="col-md-3">
-                  	<button className="btn btn-primary btn-block" type="button" onClick={this.startRoom}>Start Game</button>
+                  <div className="col-md-6">
+                    <div className="input-group">
+                      <input
+                        className="form-control"
+                        type="text"
+                        placeholder="Room Code"
+                        value={this.state.code}
+                        onChange={this.handleCodeChange}
+                        name="name"
+                      />
+                      <span className="input-group-btn">
+                        <button className="btn btn-primary" type="button" onClick={this.joinRoom}>Join Game</button>
+                      </span>
+                    </div>
                   </div>
                   <div className="col-md-3">
                   	<p className="form-control-static">{' or '}</p>
                   </div>
-                 	<div className="col-md-6">
-	                  <div className="input-group">
-	                    <input
-	                      className="form-control"
-	                      type="text"
-	                      placeholder="Room Code"
-	                      value={this.state.code}
-	                      onChange={this.handleCodeChange}
-	                      name="name"
-	                    />
-	                    <span className="input-group-btn">
-	                      <button className="btn btn-primary" type="button" onClick={this.joinRoom}>Join Game</button>
-	                    </span>
-	                  </div>
-	                </div>
+                  <div className="col-md-3">
+                    <button className="btn btn-primary btn-block" type="button" onClick={this.startRoom}>Start Game</button>
+                  </div>
+                </div>
+              </form>
+              <form className="form-horizontal">
+                <h2 className="form-control-static">Options:</h2>
+                <div className="form-group">
+                  <label htmlFor="leader-can-vote" className="col-sm-8 control-label">Round Leader Can Vote (Default Is No)</label>
+                  <select className="form-control" id="can-vote-for-self" onChange={this.handleLeaderChange}>
+                    <option>No</option>
+                    <option>Yes</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="can-vote-for-self" className="col-sm-8 control-label">Can Vote For Self (Default Is No)</label>
+                  <select className="form-control" id="can-vote-for-self" onChange={this.handleSelfChange}>
+                    <option>No</option>
+                    <option>Yes</option>
+                  </select>
                 </div>
               </form>
             </div>

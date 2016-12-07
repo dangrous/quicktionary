@@ -43,6 +43,8 @@ def get_game_data():
 @app.route('/connect', methods=['POST'])
 def join_game():
     if request.form['action'] == "start":
+        leader_can_vote = request.form['leaderCanVote'] == "true"
+        can_vote_for_self = request.form['selfCanVote'] == "true"
         player = Player.create(
             name=request.form['name']
         )
@@ -51,7 +53,9 @@ def join_game():
             code = get_room_code()
         room = Room.create(
             code=code,
-            owner=player
+            owner=player,
+            leader_can_vote=leader_can_vote,
+            can_vote_for_self=can_vote_for_self
         )
     else:
         try:
