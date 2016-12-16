@@ -92,7 +92,7 @@
             let playerNodes;
             let numPlayers = 0;
             let playerScores;
-            if ((this.state.gamedata.votes == 0 && this.state.gamedata.prompt == '')|| this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
+            if ((this.state.gamedata.votes == 0 && this.state.gamedata.prompt == '')|| (this.state.gamedata.votes == this.state.gamedata.num_players - 1 && !this.state.gamedata.leader_can_vote) || (this.state.gamedata.votes == this.state.gamedata.num_players && this.state.gamedata.leader_can_vote)) {
               this.state.players.sort(function(a,b) {
                 return b.score - a.score 
               });
@@ -103,7 +103,7 @@
               });
             }
             if (this.state.self.is_leader) {
-              if (this.state.gamedata.votes == this.state.gamedata.num_players - 1) {
+              if ((this.state.gamedata.votes == this.state.gamedata.num_players - 1 && !this.state.gamedata.leader_can_vote) || (this.state.gamedata.votes == this.state.gamedata.num_players && this.state.gamedata.leader_can_vote)) {
                 advanceButton = <button className="btn btn-secondary" type="button" onClick={this.advanceRound}>Next Round</button>;
               }
             }
