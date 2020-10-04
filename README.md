@@ -8,4 +8,8 @@ This will be an awesome app to play party games such as Dictionary, Wise and Oth
 * Flask
 * peewee
 
+## Live Version
+
+This is live at http://dangrous.pythonanywhere.com/
+
 All code is licensed under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/)
