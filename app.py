@@ -1,9 +1,8 @@
-import json
-import urllib2
 import string
 import random
-from playhouse.shortcuts import model_to_dict, dict_to_model
-from flask import Flask, Response, request, redirect, url_for, jsonify
+from urllib.request import urlopen
+from playhouse.shortcuts import model_to_dict
+from flask import Flask, request, jsonify
 from models import *
 
 app = Flask(__name__, static_url_path='', static_folder='static')
@@ -13,7 +12,7 @@ def before_request():
     initialize_db()
 
 @app.teardown_request
-def teardown_request(exception):
+def teardown_request():
     db.close()
 
 @app.route('/')
@@ -68,8 +67,7 @@ def join_game():
             player = Player.create(
                 name=request.form['name']
             )
-    # When many people joining quickly, this will not work I think.
-    print "setting up shit"
+    # When many people are joining quickly, this will not work I think.
     room.num_players += 1
     room.save()
     player.room_id = room.id
@@ -77,7 +75,7 @@ def join_game():
     player.order_in_room = room.num_players
     player.save()
     players = Player.select().where(Player.room_id == room.id)
-    return jsonify(players=[model_to_dict(player) for player in players], gamedata=model_to_dict(room), self=model_to_dict(player))
+    return jsonify(players=[model_to_dict(player) for player in players], gamedata=model_to_dict(room), requestingUser=model_to_dict(player))
 
 @app.route('/start', methods=['POST'])
 def start_game():
@@ -104,7 +102,7 @@ def handle_prompts():
 @app.route('/submit', methods=['POST'])
 def handle_submissions():
     room = Room.get(Room.id == request.form['room'])
-    player = Player.get(Player.id == request.form['self'])
+    player = Player.get(Player.id == request.form['requestingUser'])
     submission = Submission.create(
         text = request.form['submission'],
         author = player,
@@ -178,13 +176,7 @@ def vote():
     return jsonify(success=True)
 
 def get_room_code():
-    # more fun but fewer options - will need to delete old games if we do this, or add a recent option to all searches
-    url = "http://randomword.setgetgo.com/get.php?len=" + str(random.randint(5,10))
-    try: 
-        randword = urllib2.urlopen(url, timeout=1).read().lower()
-        return randword
-    except:
-        return ''.join(random.choice(string.ascii_lowercase) for n in range(6))
+    return ''.join(random.choice(string.ascii_lowercase) for n in range(6))
 
 if __name__ == '__main__':
     app.run(debug=True)
