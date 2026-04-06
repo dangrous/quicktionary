@@ -12,7 +12,7 @@ def before_request():
     initialize_db()
 
 @app.teardown_request
-def teardown_request():
+def teardown_request(exception):
     db.close()
 
 @app.route('/')

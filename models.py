@@ -54,5 +54,5 @@ class Vote(BaseModel):
     player_guess = ForeignKeyField(Player, related_name='guessed', null=True)
 
 def initialize_db():
-    db.connect()
+    db.connect(reuse_if_open=True)
     db.create_tables([Player, Room, Submission, Vote], safe=True)
