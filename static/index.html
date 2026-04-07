@@ -40,7 +40,7 @@
       
       let Game = React.createClass({
         getInitialState: function() {
-          return {gamedata:'', players:'', self: '', submissions: '', joined: false};
+          return {gamedata:'', players:'', requestingUser: '', submissions: '', joined: false};
         },
         updateGameData: function() {
           if (this.state.joined) {
@@ -52,8 +52,8 @@
               success: function(data) {
                 this.setState({gamedata: data.gamedata, players: data.players, submissions: data.submissions, votes: data.votes});
                 for (var player in data.players) {
-                  if (data.players[player].id == this.state.self.id) {
-                    this.setState({self: data.players[player]});
+                  if (data.players[player].id == this.state.requestingUser.id) {
+                    this.setState({requestingUser: data.players[player]});
                   }
                 }
               }.bind(this)
@@ -67,7 +67,7 @@
           setInterval(this.updateGameData, 2000);
         },
         handleRoomStart: function(data) {
-          this.setState({players: data.players, gamedata: data.gamedata, self: data.self, joined: true});
+          this.setState({players: data.players, gamedata: data.gamedata, requestingUser: data.requestingUser, joined: true});
         },
         handleGameStart: function(e) {
           e.preventDefault()
@@ -102,35 +102,35 @@
                 );
               });
             }
-            if (this.state.self.is_leader) {
+            if (this.state.requestingUser.is_leader) {
               if ((this.state.gamedata.votes == this.state.gamedata.num_players - 1 && !this.state.gamedata.leader_can_vote) || (this.state.gamedata.votes == this.state.gamedata.num_players && this.state.gamedata.leader_can_vote)) {
                 advanceButton = <button className="btn btn-secondary" type="button" onClick={this.advanceRound}>Next Round</button>;
               }
             }
             if (this.state.gamedata.round_num > 0) {
-              let submissionForm = <SubmissionForm room={this.state.gamedata.id} self={this.state.self} />;
+              let submissionForm = <SubmissionForm room={this.state.gamedata.id} requestingUser={this.state.requestingUser} />;
               if (!this.state.gamedata.prompt) {
                 submissionForm = '';
               }
               if (this.state.submissions != '') {
                 this.state.submissions.forEach(function(submission) {
-                  if (submission.author.id == this.state.self.id) {
+                  if (submission.author.id == this.state.requestingUser.id) {
                     submissionForm = '';
                   }
                 }.bind(this));
               }
               let submissionList;
               if (this.state.gamedata.prompt) {
-                submissionList = <SubmissionList leaderCanVote={this.state.gamedata.leader_can_vote} selfCanVote={this.state.gamedata.can_vote_for_self} votes={this.state.votes} prompt={this.state.gamedata.prompt} self={this.state.self} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
+                submissionList = <SubmissionList leaderCanVote={this.state.gamedata.leader_can_vote} selfCanVote={this.state.gamedata.can_vote_for_self} votes={this.state.votes} prompt={this.state.gamedata.prompt} requestingUser={this.state.requestingUser} submissions={this.state.submissions} num_players={this.state.gamedata.num_players} />
               }
               return (
                 <div>
                   <div className="row">
                     <div className="col-xs-12">
-                      <p>Round {this.state.gamedata.round_num}: The leader of this round is <strong>{this.state.self.is_leader ? "YOU!" : this.state.gamedata.leader.name}</strong></p>
+                      <p>Round {this.state.gamedata.round_num}: The leader of this round is <strong>{this.state.requestingUser.is_leader ? "YOU!" : this.state.gamedata.leader.name}</strong></p>
                     </div>
                   </div>
-                  <Prompt isLeader={this.state.self.is_leader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
+                  <Prompt isLeader={this.state.requestingUser.is_leader} prompt={this.state.gamedata.prompt} room={this.state.gamedata.id} />
                   {submissionForm}
                   {submissionList}
                   <div className="row m-t-1">
@@ -157,7 +157,7 @@
             }
 
             let startButton;
-            if (this.state.gamedata.owner.id == this.state.self.id) {
+            if (this.state.gamedata.owner.id == this.state.requestingUser.id) {
               startButton = <form className="form-inline m-t-1"><div className="form-group"><label>Are all players ready? </label><button className="btn btn-primary m-l-1" id="beginGame" onClick={this.handleGameStart}>Begin Game</button></div></form>;
             } else {
               startButton = '';
@@ -434,7 +434,7 @@
               url: "/submit",
               dataType: 'json',
               type: 'POST',
-              data: {submission: this.state.submission, self: this.props.self.id, room: this.props.room}
+              data: {submission: this.state.submission, requestingUser: this.props.requestingUser.id, room: this.props.room}
             });
           }
         },
@@ -472,7 +472,7 @@
             url: "/vote",
             dataType: 'json',
             type: 'POST',
-            data: {submission: subId, player: this.props.self.id}
+            data: {submission: subId, player: this.props.requestingUser.id}
           });
         },
         render: function() {
@@ -482,7 +482,7 @@
               submissionNodes = this.props.submissions.map(function(submission) {
                 
                 return (
-                  <Submission onVote={this.handleVote} leaderCanVote={this.props.leaderCanVote} selfCanVote={this.props.selfCanVote} submission={submission} prompt={this.props.prompt} key={submission.id} self={this.props.self} votes={this.props.votes}/>
+                  <Submission onVote={this.handleVote} leaderCanVote={this.props.leaderCanVote} selfCanVote={this.props.selfCanVote} submission={submission} prompt={this.props.prompt} key={submission.id} requestingUser={this.props.requestingUser} votes={this.props.votes}/>
                 );
               }.bind(this));
             } else {
@@ -527,13 +527,13 @@
           }.bind(this));
           if (voteNodes.length > 0) votes = <small className="text-muted">Votes: {voteNodes}</small>;
           let okayToVote = true; 
-          if (!this.props.leaderCanVote && this.props.self.is_leader) {
+          if (!this.props.leaderCanVote && this.props.requestingUser.is_leader) {
             okayToVote = false;
           }
-          if (!this.props.selfCanVote && this.props.self.id == this.props.submission.author.id) {
+          if (!this.props.selfCanVote && this.props.requestingUser.id == this.props.submission.author.id) {
             okayToVote = false;
           }
-          if (!this.props.self.has_voted && okayToVote) {
+          if (!this.props.requestingUser.has_voted && okayToVote) {
             voteButton = <button className="btn btn-secondary pull-xs-right btn-sm vote-button" type="button" onClick={this.onVote}><i className="fa fa-check"></i> Vote</button>;
           }
           if (this.props.submission.show_auth) {
